@@ -1,5 +1,11 @@
 # Redshift Agentic AI Assistant
 
+![Python](https://img.shields.io/badge/Python-3.9+-blue)
+![LangGraph](https://img.shields.io/badge/LangGraph-0.2-purple)
+![Gemini](https://img.shields.io/badge/Gemini-1.5Flash-green)
+![Streamlit](https://img.shields.io/badge/Streamlit-1.30+-red)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+
 A LangGraph-powered Agentic AI module that enables **natural language querying** of Amazon Redshift — retrieve DDLs, run SELECT queries, check record counts, inspect table ownership, and explore column metadata via plain English prompts.
 
 Built as a POC using **Gemini 1.5 Flash (free)** + **SQLite** — swap one line to connect to real Redshift.
@@ -9,6 +15,7 @@ Built as a POC using **Gemini 1.5 Flash (free)** + **SQLite** — swap one line 
 ## Features
 
 - Natural language to SQL conversion via Gemini 1.5 Flash
+- Beautiful chat UI powered by Streamlit
 - List all accessible tables
 - Retrieve DDL (table structure and schema)
 - Count records in any table
@@ -17,6 +24,7 @@ Built as a POC using **Gemini 1.5 Flash (free)** + **SQLite** — swap one line 
 - Get detailed column metadata
 - SELECT-only guardrail — no data modification possible
 - User-based connection — inherits database permissions automatically
+- Conversation memory — agent remembers context within a session
 
 ---
 
@@ -26,9 +34,10 @@ Built as a POC using **Gemini 1.5 Flash (free)** + **SQLite** — swap one line 
 |-------|------------|
 | Agent framework | LangGraph |
 | LLM | Google Gemini 1.5 Flash (free tier) |
+| UI | Streamlit |
 | Database (POC) | SQLite |
 | Database (Production) | Amazon Redshift |
-| Language | Python 3.10+ |
+| Language | Python 3.9+ |
 
 ---
 
@@ -42,7 +51,7 @@ cd redshift-agentic-ai
 
 ### 2. Create virtual environment
 ```bash
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate      # Mac/Linux
 venv\Scripts\activate         # Windows
 ```
@@ -52,30 +61,74 @@ venv\Scripts\activate         # Windows
 pip install -r requirements.txt
 ```
 
-### 4. Set up your API key
+### 4. Set up your .env file
+
+**This step is required — the app will not run without it.**
+
+Create a `.env` file in the root of the project:
+```bash
+touch .env
+```
+
+Open `.env` and add the following:
+```
+GEMINI_API_KEY=your_gemini_api_key_here
+DB_USER=your_username
+```
+
+**How to get a free Gemini API key:**
+1. Go to https://aistudio.google.com
+2. Sign in with your Google account
+3. Click **Get API Key** on the left panel
+4. Click **Create API Key**
+5. Copy the key and paste it into your `.env` file
+
+> Important: Never share your `.env` file or commit it to GitHub.
+> The `.gitignore` file in this repo already excludes it automatically.
+
+You can also use the provided template:
 ```bash
 cp .env.example .env
 ```
-Then open `.env` and add your free Gemini API key from https://aistudio.google.com
+Then open `.env` and fill in your own values.
 
-### 5. Run the agent
+### 5. Run the Streamlit Chat UI (recommended)
 ```bash
-python main.py
+streamlit run app.py
 ```
+Opens a beautiful chat interface at `http://localhost:8501` in your browser.
+
+### 5b. Run the Terminal CLI (alternative)
+```bash
+python3 main.py
+```
+Runs the agent directly in your terminal without a UI.
+
+---
+
+## Streamlit Chat UI
+
+The app includes a full chat interface built with Streamlit:
+
+- Type questions in plain English in the chat box
+- Agent responds with results, DDLs, record counts, and query output
+- Conversation history is maintained within the session
+- Example prompts available via the expandable help section
+- Runs locally at `http://localhost:8501`
 
 ---
 
 ## Example Prompts
 
 ```
-You: Show me all tables
-You: How many records are in the orders table?
-You: Show me the DDL for the customers table
-You: Who owns the products table?
-You: Show me top 5 orders from the West region
-You: What columns does the orders table have?
-You: Show me all completed orders with their total value
-You: Which customers are from the USA?
+Show me all tables
+How many records are in the orders table?
+Show me the DDL for the customers table
+Who owns the products table?
+Show me top 5 orders from the West region
+What columns does the orders table have?
+Show me all completed orders with their total value
+Which customers are from the USA?
 ```
 
 ---
@@ -84,18 +137,47 @@ You: Which customers are from the USA?
 
 ```
 redshift-agentic-ai/
-│
-├── agent/
-│   ├── __init__.py
-│   ├── database.py     # DB connection + sample data setup
-│   ├── tools.py        # Core tools: DDL, SELECT, count, owner
-│   └── agent.py        # LangGraph agent + Gemini LLM + CLI
-│
-├── main.py             # Entry point
-├── requirements.txt
-├── .env.example        # Template — copy to .env
-├── .gitignore
-└── README.md
+|
+|-- agent/
+|   |-- __init__.py
+|   |-- database.py     # DB connection + sample data setup
+|   |-- tools.py        # Core tools: DDL, SELECT, count, owner
+|   |-- agent.py        # LangGraph agent + Gemini LLM
+|
+|-- app.py              # Streamlit chat UI
+|-- main.py             # Terminal CLI entry point
+|-- requirements.txt    # All dependencies
+|-- .env.example        # Template - copy to .env and fill in your keys
+|-- .gitignore          # Excludes .env and sensitive files from GitHub
+|-- README.md
+```
+
+---
+
+## Setting Up Your .env File
+
+The `.env` file stores your secret API keys and is **never uploaded to GitHub**.
+
+**Step 1 - Create the file:**
+```bash
+touch .env
+```
+
+**Step 2 - Add your credentials:**
+```
+GEMINI_API_KEY=your_gemini_api_key_here
+DB_USER=your_username
+```
+
+**Step 3 - For production Redshift (optional):**
+```
+GEMINI_API_KEY=your_gemini_api_key_here
+DB_USER=your_redshift_username
+
+REDSHIFT_HOST=your-cluster.redshift.amazonaws.com
+REDSHIFT_PORT=5439
+REDSHIFT_DBNAME=your_database
+REDSHIFT_PASSWORD=your_redshift_password
 ```
 
 ---
@@ -112,26 +194,44 @@ def get_connection(username: str, password: str):
         host=os.getenv("REDSHIFT_HOST"),
         port=int(os.getenv("REDSHIFT_PORT", 5439)),
         dbname=os.getenv("REDSHIFT_DBNAME"),
-        user=username,      # user's own credentials
-        password=password   # enforces Redshift permissions
+        user=username,
+        password=password
     )
 ```
 
-By connecting as the actual user, Redshift automatically enforces all table, row, and column-level permissions — the agent never needs to know what's restricted.
+By connecting as the actual user, Redshift automatically enforces all table, row, and column-level permissions.
 
 ---
 
 ## Security Design
 
-- **SELECT only** — agent rejects INSERT, UPDATE, DELETE, DROP
-- **User-based auth** — each user connects with their own credentials
-- **Permission enforcement at DB level** — restricted data is blocked by Redshift, not the agent
-- **No credentials in code** — all secrets stored in `.env`
-- **Row limit** — queries capped at 50 rows by default
+- **SELECT only** - agent rejects INSERT, UPDATE, DELETE, DROP
+- **User-based auth** - each user connects with their own credentials
+- **Permission enforcement at DB level** - restricted data is blocked by Redshift, not the agent
+- **No credentials in code** - all secrets stored in `.env` which is excluded from GitHub via `.gitignore`
+- **Row limit** - queries capped at 50 rows by default
+
+---
+
+## Troubleshooting
+
+**App not starting?**
+- Make sure virtual environment is active: `source venv/bin/activate`
+- Make sure `.env` file exists with a valid `GEMINI_API_KEY`
+- Run `pip install -r requirements.txt` to ensure all dependencies are installed
+
+**Gemini API errors?**
+- Verify your API key is correct in `.env`
+- Check your free tier quota at aistudio.google.com
+- Make sure there are no spaces around the `=` in your `.env` file
+
+**Slow responses?**
+- This is normal for LLM-powered apps - expect 2-5 seconds per response
+- Gemini 1.5 Flash is the fastest free model available
 
 ---
 
 ## Author
 
-Yatan Jain — Senior Data Engineer  
+Yatan Jain - Senior Data Engineer
 linkedin.com/in/yatanjain
